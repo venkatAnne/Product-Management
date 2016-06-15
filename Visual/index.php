@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+  <title>ViViaN</title>
   <head>
     <?php
       include_once "vivian_common_header.php";
@@ -370,12 +371,31 @@ function getHL7LinkByPackageName(pkgName, linkUrl) {
   return "<a href=\"" + defLnk + "/" + pkgName + "-HL7.html\" target=\"_blank\">HL7</a>";
 }
 
+function getProtocolLinkByPackageName(pkgName, linkUrl) {
+  var defLnk = "files";
+  if (linkUrl){
+    defLnk = linkUrl + '/' + defLnk;
+  }
+  return "<a href=\"" + defLnk + "/" + pkgName + "-Protocols.html\" target=\"_blank\">Protocols</a>";
+}
+
+function getHLOLinkByPackageName(pkgName, linkUrl) {
+  var defLnk = "files";
+  if (linkUrl){
+    defLnk = linkUrl + '/' + defLnk;
+  }
+  return "<a href=\"" + defLnk + "/" + pkgName + "-HLO.html\" target=\"_blank\">HLO</a>";
+}
+
 function getInterfaceHtml(node) {
   pkgName = node.name
   var htmlLnk = "<ul>";
   var rpcLink = "";
   var hl7Link = "";
+  var protocolLink = "";
+  var hloLink = "";
   var extraLink = "";
+  console.log(node.interfaces);
   if (node.interfaces !== undefined){
     if (selectedIndex === 3) {
       category = distProp[selectedIndex].name;
@@ -390,6 +410,14 @@ function getInterfaceHtml(node) {
     index = node.interfaces.indexOf("HL7");
     if (index >= 0){
       hl7Link = getHL7LinkByPackageName(pkgName, extraLink);
+    }
+    index = node.interfaces.indexOf("Protocols");
+    if (index >= 0){
+      protocolLink = getProtocolLinkByPackageName(pkgName, extraLink);
+    }
+    index = node.interfaces.indexOf("HLO");
+    if (index >= 0){
+      hloLink = getHLOLinkByPackageName(pkgName, extraLink);
     }
   }
   if (pkgName === 'Order Entry Results Reporting'){
@@ -407,6 +435,12 @@ function getInterfaceHtml(node) {
     htmlLnk += "<li>Web Service API</li>";
     if (hl7Link.length > 0){
       htmlLnk += "<li>" + hl7Link + "</li>";
+    }
+    if (protocolLink.length > 0){
+      htmlLnk += "<li>" + protocolLink + "</li>";
+    }
+    if (hloLink.length > 0){
+      htmlLnk += "<li>" + hloLink + "</li>";
     }
     htmlLnk += "</ul>";
   }

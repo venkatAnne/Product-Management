@@ -10,6 +10,7 @@ def generate_packages_json():
   with open("packages.json", 'w') as outputFile:
     json.dump(pkgCatJson, outputFile)
   with open("packages_autocomplete.json", 'w') as autocompleteOutputFile:
+    pkgNameSet.add("Unknown")
     packageNames = list(pkgNameSet)
     packageNames.sort()
     json.dump(packageNames, autocompleteOutputFile)
@@ -47,6 +48,10 @@ def generate_output_json_dict(pkgCatJson, pkgDesJson):
         pkgNameInterface.setdefault(pkgName,[]).append('RPC')
       if row['HL7']:
         pkgNameInterface.setdefault(pkgName,[]).append('HL7')
+      if row['Protocols']:
+        pkgNameInterface.setdefault(pkgName,[]).append('Protocols')
+      if row['HLO']:
+        pkgNameInterface.setdefault(pkgName,[]).append('HLO')
   
   traverseChildren(pkgCatJson, pkgDesJson)
 
