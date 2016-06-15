@@ -46,13 +46,19 @@
     </div>
   </br>
   </br>
-  <div id='title' style="position:relative; top:10px; left:30px;font-size:.97em;" title="This tree graph represents the VHA Business Function Framework (BFF). The BFF is a hierarchical construct that describes VHA business functions or  major service areas within each core mission Line of Business (LoB) and serve as logical groupings of activities. Subfunctions represent the logical groupings of sub-activities needed to fulfill each VHA business function. Click on an item to bring a modal window with detailed description and commentary.">
-  <p>VHA Business Function Framework Demo</p>
+  <div id='description' class='hint'  style="position:relative; top:10px; left:20px; margin-right:200px;">
+    <p>
+    This tree graph represents the VHA Business Function Framework (BFF).
+    The BFF is a hierarchical construct that describes VHA business functions
+    or major service areas within each core mission Line of Business (LoB) and
+    serve as logical groupings of activities. Subfunctions represent the
+    logical groupings of sub-activities needed to fulfill each VHA business
+    function. Click on an item to bring a modal window with detailed
+    description and commentary.
+    </p>
+    <p>This demo is based on BFF version 2.10.</p>
   </div>
-  <div class='hint' style="position:relative; top:10px; left:30px; font-size:0.9em; width:350px;">
-  <p>This demo is based on BFF version 2.7.</p>
-  <div id="legend_placeholder"></div>
-  </div>
+  <div id="legend_placeholder" style="position:relative; left:20px; top:20px;"></div>
   <div id="treeview_placeholder"></div>
 
 <script type="text/javascript">
@@ -60,13 +66,13 @@ $("#accordion").accordion({heightStyle: 'content', collapsible: true}).hide();
 var chart = d3.chart.treeview()
               .height(940)
               .width(1880)
-              .margins({top: 45, left: 280, bottom: 0, right: 0})
               .textwidth(280);
 var legendShapeChart = d3.chart.treeview()
               .height(50)
               .width(350)
               .margins({top:42, left:10, right:0, bottom:0})
               .textwidth(110);
+
 <?php include_once "vivian_tree_layout_common.js" ?>
 
 var shapeLegend = [{name: "Framework Grouping", shape: "triangle-up"},
@@ -145,7 +151,7 @@ function node_onMouseOut(d) {
 function createShapeLegend() {
   var shapeLegendDisplay = legendShapeChart.svg().selectAll("g.shapeLegend")
       .data(shapeLegend)
-    .enter().append("svg:g")
+      .enter().append("svg:g")
       .attr("class", "shapeLegend")
       .attr("transform", function(d, i) { return "translate("+(i * 200) +", -10)"; })
   shapeLegendDisplay.append("path")
@@ -158,7 +164,7 @@ function createShapeLegend() {
       .attr("x", 13)
       .attr("dy", ".31em")
       .text(function(d) {
-        return  d.name;
+        return d.name;
       });
 
   var shapeLegendDisplay = legendShapeChart.svg();

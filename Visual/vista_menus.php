@@ -32,6 +32,8 @@
 
         d3.json('option_autocomplete.json', function(json) {
           var sortedjson = json.sort(function(a,b) { return a.label.localeCompare(b.label); });
+          // Note: vivian_tree_layout_common expects this control
+          // to be called 'option_autocomplete'.
           $("#option_autocomplete").autocomplete({
             source: sortedjson,
             select: optionAutoCompleteChanged
@@ -54,47 +56,64 @@
   <body>
     <?php include_once "vivian_osehra_image.php" ?>
 
-    <!-- Tooltip -->
+  <!-- Tooltip -->
   <div id="toolTip" class="tooltip" style="opacity:0;">
       <div id="head" class="header"></div>
       <div  class="tooltipTail"></div>
   </div>
-<div id='title' style="position:relative; top:10px; left:30px; font-size:.97em;">
- <p title="This tree visualization represents the menu hierarchy of VistA. Mouse over any of the entries in the tree to see the menu option name and the security key (if any). Click on an item to see the menu option details."> VistA Menus </p>
-  <div style="position:relative;" >
-    <label title="Show the structure of a top level menu by entering the name of the option." style="width:200;" for="autocomplete">Select a top level menu: </label>
-    <input id="autocomplete" size="40">
+
+  <div class='hint' style="position:relative; left:20px; top:50px">
+    <p>
+    This tree visualization represents the menu hierarchy of VistA. Mouse over
+    any of the entries in the tree to see the menu option name and the security
+    key (if any). Click on an item to see the menu option details.
+    </p>
   </div>
-  <div>
-    <label title="Search for an option by entering the name of the option that you wish to find."> Search for an Option:</label>
-    <input id="option_autocomplete" size="40">
+
+<div id="legend_placeholder" style="position:relative; left:20px; top:50px;"></div>
+<div style="position:relative; left:20px; top:60px; width:400px;">
+  <div id="packageSearch">
+    <div><label title="Show the structure of a top level menu by entering the name of the option."
+                for="autocomplete">Select a top level menu:</label></div>
+    <div><input id="autocomplete" size="40"></div>
   </div>
+  </br>
   <div>
+    <div><label title="Search for an option by entering the name of the option that you wish to find."
+                for="option_autocomplete">Search for an option:</label></div>
+    <div><input id="option_autocomplete" size="40"></div>
+    <div id="search_result"> </div>
+  </div>
+  <div id="buttons" style="position:relative; top:10px;">
     <button onclick="_collapseAllNode()">Collapse All</button>
     <button onclick="_resetAllNode()">Reset</button>
   </div>
 </div>
-</br>
-<div id="legend_placeholder"></div>
+
 <div id="treeview_placeholder"></div>
 
 <script type="text/javascript">
+
+// Note: vivian_tree_layout_common expects this variable
+// to be called 'chart'.
 var chart = d3.chart.treeview()
               .height(1050)
               .width(1280*2)
-              .margins({top: 60, left: 260, bottom: 0, right: 0})
+              .margins({top: 0, left: 200, bottom: 0, right: 0})
               .textwidth(300)
               .nodeTextHyperLink(getOptionDetailLink);
 var legendShapeChart = d3.chart.treeview()
               .height(50)
-              .width(350)
-              .margins({top:42, left:10, right:0, bottom:0})
+              .width(250)
+              .margins({top:10, left:10, right:0, bottom:0})
               .textwidth(110);
 var legendTypeChart = d3.chart.treeview()
               .height(50)
               .width(1100)
-              .margins({top:42, left:0, right:0, bottom:0})
+              .margins({top:10, left:10, right:0, bottom:0})
               .textwidth(110);
+
+<?php include_once "vivian_tree_layout_common.js" ?>
 
 var shapeLegend = [{name: "Menu", shape: "triangle-up"},
                    {name: "Option", shape:"circle"}]
@@ -103,8 +122,6 @@ chart.on("text","attr","fill",color_by_type);
 var selectedIndex=0;
 
 var target_option='';
-var target_node;
-var target_path = [];
 
 var menuType = [
   {iName: "legend",color: "black",dName: "All Types"},
@@ -166,22 +183,7 @@ function optionAutoCompleteChanged(eve, ui) {
   resetMenuFile(menuFile);
 }
 
-<?php include_once "vivian_tree_layout_common.js" ?>
-
-function _collapseAllNode() {
-  clearAutocomplete();
-  collapseAllNode(chart.nodes());
-  chart.update(chart.nodes());
-}
-
-function _resetAllNode() {
-  clearAutocomplete();
-  resetAllNode(chart.nodes());
-  chart.update(chart.nodes());
-}
-
 resetMenuFile("menus/VistAMenu-9.json");
-
 
 function resetMenuFile(menuFile) {
   d3.json(menuFile, function(json) {
@@ -199,8 +201,8 @@ function resetMenuFile(menuFile) {
     createLegend();
 
     if(target_option != '') {
-      openSpecificOption(chart.nodes());
-      setTimeout(highlight_path,300,chart,json);
+      openSpecificNode(target_option, chart.nodes());
+      setTimeout(highlightPath,300,chart,json);
     }
     else {
       clearAutocomplete();
@@ -212,6 +214,9 @@ var toolTip = d3.select(document.getElementById("toolTip"));
 var header = d3.select(document.getElementById("head"));
 
 function node_onMouseClick(d) {
+  if (d.depth == 0) {
+    clearAutocomplete();
+  }
   chart.onNodeClick(d);
   if(selectedIndex !== 0){
     d3.selectAll("text")
@@ -246,7 +251,7 @@ function createLegend() {
     .data(menuType)
     .enter().append("svg:g")
     .attr("class", "legend")
-    .attr("transform", function(d, i) { return "translate(" + (i * 110) +",-10)"; })
+    .attr("transform", function(d, i) { return "translate(" + (i * 110) +",30)"; })
     .on("click", function(d) {
       selectedIndex = menuType.indexOf(d);
       if(selectedIndex !== 0){
@@ -278,68 +283,13 @@ function createLegend() {
           .text("Option Type Filter Menu");
 }
 
-//Enter Cost Information for Procedures
-function searchForOption(d) {
-  if (d._children) {
-    for(var i=0; i<d._children.length;i++) {
-      var ret = searchForOption(d._children[i])
-      if(ret) {
-         expand(d);
-         return true;
-      }
-    }
-  }
-  if( d.name.toUpperCase() == target_option.toUpperCase()) {
-    expand(d);
-    target_node = d;
-    return true;
-  }
-  return false;
-}
-
-function openSpecificOption(root) {
-  collapseAllNode(root);
-  searchForOption(root);
-}
-
-function highlight_path(chart, json) {
-  var tree = d3.layout.tree()
-  var nodes = tree.nodes(chart.nodes());
-  var links = tree.links(nodes);
-  var target = target_node;
-
-  while (target.name != nodes[0].name) {
-    var link = chart.svg().selectAll("path.link").data(links, function(d) {
-      if(d.target == target) {
-        target = d.source;
-        target_path.push(d)
-      }
-    });
-
-    if(target == target_node){
-      $("#option_autocomplete")[0].style.border="solid 4px orange";
-      $("#search_result").html("<h5>Target option found in menu, but couldn't be matched.</h5>");
-      resetAllNode(json)
-      break;
-    }
-  }
-
-  chart.svg().selectAll("path.link").data(target_path).forEach(highlight);
-  d3.select("#treeview_placeholder").datum(json).call(chart);
-}
-
-function highlight(d) {
-  for(var i =0; i< d.length; i++) {
-    d[i].classList.add("target");
-  }
-}
-
 function createShapeLegend() {
   var shapeLegendDisplay = legendShapeChart.svg().selectAll("g.shapeLegend")
       .data(shapeLegend)
-    .enter().append("svg:g")
+      .enter().append("svg:g")
       .attr("class", "shapeLegend")
-      .attr("transform", function(d, i) { return "translate("+(i * 200) +", -10)"; });
+      .attr("transform", function(d, i) { return "translate("+(i * 150) +", 25)"; });
+
   shapeLegendDisplay.append("path")
       .attr("class", function(d) {return d.name;})
       .attr("d", d3.svg.symbol().type(function(d) { return d.shape;}))
@@ -356,24 +306,12 @@ function createShapeLegend() {
   var shapeLegendDisplay = legendShapeChart.svg();
   shapeLegendDisplay.append("text")
           .attr("x", 0)
-          .attr("y", -28 )
+          .attr("y", 10 )
           .attr("text-anchor", "left")
           .style("font-size", "16px")
           .text("Shape Legend");
 }
-function clearAutocomplete() {
-  console.log("clearAutocomplete");
-  document.getElementById("option_autocomplete").value= '';
-  chart.svg().selectAll("path.link").data(target_path).forEach(function(d) {
-      for(var i =0; i< d.length; i++) {
-        d[i].classList.remove("target");
-      }
-  });
 
-  target_path = [];
-  target_option='';
-
-}
     </script>
     </div>
   </body>

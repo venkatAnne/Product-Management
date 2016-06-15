@@ -22,9 +22,11 @@
         });
 
         d3.json('packages_autocomplete.json', function(json) {
+          // Note: vivian_tree_layout_common expects this control
+          // to be called 'option_autocomplete'.
           $("#option_autocomplete").autocomplete({
             source: json,
-            select: optionAutoCompleteChanged
+            select: packageAutoCompleteChanged
           }).data('autocomplete');
         });
       });
@@ -58,31 +60,31 @@
         <div id="description"></div>
     </div>
   </div>
-
-  <div style="position:absolute; left:20px; top:350px;">
+</div>
+<div id="legend_placeholder" style="position:relative; left:20px; top:50px;"></div>
+<div style="position:relative; width:400px; left:20px; top:65px;">
+  <div id="packageSearch">
     <div><label for="option_autocomplete"> Search for a package:</label></div>
     <div><input id="option_autocomplete" size="40" onfocus="clearAutocomplete()"></div>
     <div id="search_result"> </div>
   </div>
-</div>
-</br>
-</br>
-</br>
-  <div id="menuButtons">
+  <div id="buttons" style="position:relative; top:10px;">
       <button onclick="_expandAllNode()">Expand All</button>
       <button onclick="_collapseAllNode()">Collapse All</button>
       <button onclick="_resetAllNode()">Reset</button>
   </div>
-<div id="legend_placeholder">
 </div>
 
 <div id="treeview_placeholder"/>
 
 <script type="text/javascript">
+
+// Note: vivian_tree_layout_common expects this variable
+// to be called 'chart'.
 var chart = d3.chart.treeview()
               .height(1280)
               .width(1200)
-              .margins({top:42, left:180, right:0, bottom:0})
+              .margins({top:0, left:100, right:0, bottom:0})
               .textwidth(220);
 var legendShapeChart = d3.chart.treeview()
               .height(50)
@@ -95,6 +97,7 @@ var legendDistChart = d3.chart.treeview()
               .margins({top:42, left:10, right:0, bottom:0})
               .textwidth(110);
 $("#accordion").accordion({heightStyle: 'content', collapsible: true}).hide();
+
 <?php include_once "vivian_tree_layout_common.js" ?>
 
 var package_link_url = "http://code.osehra.org/dox/";
@@ -122,10 +125,6 @@ var shapeLegend = [{name: "Package Category", shape: "triangle-up"},
                    {name: "Package", shape:"circle"}]
 var himInfoJSON;
 
-var target_option = "";
-var target_node;
-var target_path = [];
-
 d3.json("packages.json", function(json) {
   resetAllNode(json);
 
@@ -146,98 +145,16 @@ d3.json("packages.json", function(json) {
   createShapeLegend();
 });
 
-function _expandAllNode() {
-  clearAutocomplete();
-  expandAllNode(chart.nodes());
-  chart.update(chart.nodes());
-}
-
-function _collapseAllNode() {
-  clearAutocomplete();
-  collapseAllNode(chart.nodes());
-  chart.update(chart.nodes());
-}
-
-function _resetAllNode() {
-  clearAutocomplete();
-  resetAllNode(chart.nodes());
-  chart.update(chart.nodes());
-}
-
-function optionAutoCompleteChanged(event, ui) {
-  target_option = ui.item.value;
-  openSpecificOption();
-  setTimeout(highlight_path,300,chart);
-}
-
-function searchForOption(d) {
-  if (d._children) {
-    for(var i=0; i<d._children.length;i++) {
-      var ret = searchForOption(d._children[i])
-      if(ret) {
-         expand(d);
-         return true;
-      }
-    }
+function packageAutoCompleteChanged(event, ui) {
+  if (chart.nodes()._children) { // collapsed
+    _expandAllNode();
+  } else {
+    clearHighlightedPath();
   }
-
-  if( d.name.toUpperCase() == target_option.toUpperCase()) {
-    expand(d);
-    target_node = d;
-    return true;
-  }
-    return false;
+  var target = ui.item.value;
+  openSpecificNode(target, chart.nodes());
+  setTimeout(highlightPath,300,chart);
 }
-
-function openSpecificOption() {
-  collapseAllNode(chart.nodes());
-  searchForOption(chart.nodes());
-}
-
-function highlight_path(chart) {
-  var tree = d3.layout.tree()
-  var nodes = tree.nodes(chart.nodes());
-  var links = tree.links(nodes);
-  var target = target_node;
-
-  while (target.name != nodes[0].name) {
-    var link = chart.svg().selectAll("path.link").data(links, function(d) {
-      if(d.target == target) {
-        target = d.source;
-        target_path.push(d)
-        }
-    });
-
-    if(target == target_node) {
-      $("#option_autocomplete")[0].style.border="solid 4px blue";
-      $("#search_result").html("<h5>Target option found in menu, but couldn't be matched.</h5>");
-      resetAllNode(chart.nodes())
-      break;
-      }
-  }
-
-  chart.svg().selectAll("path.link").data(target_path).forEach(highlight);
-  d3.select("#treeview_placeholder").datum(chart.nodes()).call(chart);
-}
-
-function highlight(d) {
-  for(var i =0; i< d.length; i++) {
-    d[i].classList.add("target");
-  }
-}
-
-function clearAutocomplete() {
-  document.getElementById("option_autocomplete").value= '';
-  chart.svg().selectAll("path.link").data(target_path).forEach(function(d) {
-      for(var i =0; i< d.length; i++) {
-        d[i].classList.remove("target");
-      }
-  });
-
-  target_path = [];
-  target_option='';
-}
-
 
 function pkgLinkClicked(d) {
   if (d.hasLink) {
@@ -272,7 +189,10 @@ function pkgLinkClicked(d) {
     // var win = window.open(pkgUrl, '_black');
     // win.focus();
   }
-  else{
+  else {
+    if (d.depth == 0) {
+      clearAutocomplete();
+    }
     chart.onNodeClick(d);
   }
 }
@@ -395,7 +315,6 @@ function getInterfaceHtml(node) {
   var protocolLink = "";
   var hloLink = "";
   var extraLink = "";
-  console.log(node.interfaces);
   if (node.interfaces !== undefined){
     if (selectedIndex === 3) {
       category = distProp[selectedIndex].name;
@@ -569,7 +488,7 @@ function createLegend() {
 function createShapeLegend() {
   var shapeLegendDisplay = legendShapeChart.svg().selectAll("g.shapeLegend")
       .data(shapeLegend)
-    .enter().append("svg:g")
+      .enter().append("svg:g")
       .attr("class", "shapeLegend")
       .attr("transform", function(d, i) { return "translate("+(i * 200) +", -10)"; })
 
@@ -594,6 +513,7 @@ function createShapeLegend() {
           .style("font-size", "16px")
           .text("Shape Legend");
 }
+
     </script>
   </body>
 </html>
